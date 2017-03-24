@@ -108,6 +108,16 @@ private:
         return std::find (params.height_coord.cbegin (), params.height_coord.cend (), true)
             - params.height_coord.cbegin ();
     }
+
+    /// Report vertices size on all non-height dimensions.
+    std::size_t accumulate_nondisp_size () const 
+    {
+        size_t acc = 1;
+        for (size_t n = params.hmap_size.size (), i = 0; i < n; ++i) 
+            if (!params.height_coord[i]) 
+                acc *= params.hmap_size[i];
+        return acc;
+    }
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -274,10 +284,9 @@ void obj2hmap::read_obj ()
     blo.fill (numeric_limits<float>::max ());
     bhi.fill (numeric_limits<float>::min ());
 
-    xyz.clear ();
-    xyz.reserve (   /// Good guess is that the requested hmap is 1:1 with the supplied OBJ vertices
-            accumulate (params.hmap_size.cbegin (), params.hmap_size.cend (), 
-            1u, multiplies<unsigned> ()));
+    // Good guess is that the requested hmap is 1:1 with the supplied OBJ vertices
+    xyz.clear ();   
+    xyz.reserve (accumulate_nondisp_size ());
 
     // As getline, but w/o the memory store - useless optimization.
     auto skipline = [] (ifstream& is) { 
@@ -320,15 +329,8 @@ void obj2hmap::make_grid ()
 {
     using namespace std;
 
-    constexpr vec3::value_type default_value = 0.f;
-
     grid.clear ();
-    grid.resize ([] (uvec3 const& sz, bvec3 const& ax) {
-            size_t acc = 1;
-            for (size_t n = sz.size (), i = 0; i < n; ++i) 
-                if (!ax[i]) acc *= sz[i];
-            return acc;
-    } (params.hmap_size, params.height_coord), default_value);
+    grid.resize (accumulate_nondisp_size (), 0.f);
  
     vec3 gridsz;
     for (size_t n = gridsz.size (), i = 0; i < n; ++i) 
