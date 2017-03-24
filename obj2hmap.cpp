@@ -413,14 +413,15 @@ int main (int argc, const char* argv[])
     const char* info = 
         "obj2hmap - An Wavefront *.obj file convertor to binary heightmap file\n"
         "\n"
-        "obj2hmap OBJ HMAP x|y|z SIZE_X SIZE_Y SIZE_Z\n"
+        "obj2hmap OBJ HMAP SIZE_X SIZE_Y SIZE_Z x|y|z [u8|u16|u32|f32|tu8|tu16|tu32|tf32]\n"
         "OBJ        - is the input obj file\n"
         "HMAP       - is the output binary heightmap file\n"
+        "SIZE_XYZ   - the three integer dimensions of the heightmap into which to put the obj\n"
         "x y z      - one of the axes showing the displacement value of the heightmap\n"
-        "SIZE_XYZ   - The three integer dimensions of the heightmap into which to put the obj\n"
+        "[t]u[num]  - an optional type of heightmap values, binary or text 't'. Default u16.
         "\n"
         "Example:\n"
-        "obj2hmap terrain.obj terrain.r16 y 4097 0xFFFF 4097\n"
+        "obj2hmap terrain.obj terrain.r16 4096 0xFFFF 4096 y\n"
         ;
     try
     {

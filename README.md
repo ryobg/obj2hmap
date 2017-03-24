@@ -9,6 +9,9 @@ mash up (and straighten a bit later) this tool. It is really one file-show.
 As always the best documentation is the code itself. And this code is small - <1k lines of code with
 the huge Doxygen comments around.
 
+Processing 1GiB obj file for 4k by 4k vertives, consumes like 20-30 seconds. Most of which are to
+read the file itself.
+
 ## Requirements
 
 Any C++11/14 conformant compiler. Didn't tried it, but I think even GCC 4.9 will suffice. During my
