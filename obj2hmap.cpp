@@ -346,7 +346,7 @@ void obj2hmap::make_grid ()
         size_t ndx = 0, ndxmul = 1;
         for (size_t n = gridsz.size (), i = 0; i < n; ++i)
         {
-            auto p = trunc ((xyz[beg][i] - blo[i]) * gridsz[i]);
+            auto p = round ((xyz[beg][i] - blo[i]) * gridsz[i]);
             ndx += static_cast<size_t> (p) * ndxmul;
             ndxmul = ndxmul * !params.height_coord[i] * params.hmap_size[i]
                    + ndxmul *  params.height_coord[i];
@@ -392,10 +392,10 @@ void obj2hmap::dump_heightmap ()
         case param_type::u16 : bstream_write<uint16_t> (file, val); break;
         case param_type::u32 : bstream_write<uint32_t> (file, val); break;
         case param_type::f32 : bstream_write<float   > (file, val); break;
-        case param_type::tu8 : file << static_cast<uint8_t > (val); break;
-        case param_type::tu16: file << static_cast<uint16_t> (val); break;
-        case param_type::tu32: file << static_cast<uint32_t> (val); break;
-        case param_type::tf32: file << static_cast<float   > (val); break;
+        case param_type::tu8 : file << static_cast<uint8_t > (val) << '\n'; break;
+        case param_type::tu16: file << static_cast<uint16_t> (val) << '\n'; break;
+        case param_type::tu32: file << static_cast<uint32_t> (val) << '\n'; break;
+        case param_type::tf32: file << static_cast<float   > (val) << '\n'; break;
         };
     }
 }
@@ -418,7 +418,7 @@ int main (int argc, const char* argv[])
         "HMAP       - is the output binary heightmap file\n"
         "SIZE_XYZ   - the three integer dimensions of the heightmap into which to put the obj\n"
         "x y z      - one of the axes showing the displacement value of the heightmap\n"
-        "[t]u[num]  - an optional type of heightmap values, binary or text 't'. Default u16.
+        "[t]u[num]  - an optional type of heightmap values, binary or text 't'. Default u16.\n"
         "\n"
         "Example:\n"
         "obj2hmap terrain.obj terrain.r16 4096 0xFFFF 4096 y\n"
