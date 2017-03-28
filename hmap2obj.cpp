@@ -57,6 +57,7 @@ public:
         uvec2 hmap_size;    ///< How big is the integer grid of the input heighmap file
         vec3 obj_blo;       ///< The lowest corner of the obj bounding box
         vec3 obj_bhi;       ///< The highest corner of the obj bounding box
+        bool absolute;      ///< Whether height values shall occupy the whole input grid range
     };
 
     // 
@@ -110,6 +111,7 @@ hmap2obj::param_type hmap2obj::parse_cli (std::vector<std::string> const& args)
     using namespace std;
 
     param_type p;
+    p.absolute = false;
     p.hmap_size.fill (0);
     p.obj_blo.fill (numeric_limits<float>::quiet_NaN ());
     p.obj_bhi.fill (numeric_limits<float>::quiet_NaN ());
@@ -125,6 +127,12 @@ hmap2obj::param_type hmap2obj::parse_cli (std::vector<std::string> const& args)
         if (p.obj.empty ()) 
         {
             p.obj = arg;
+            continue;
+        }
+
+        if (arg == "--absolute")
+        {
+            p.absolute = true;
             continue;
         }
 
@@ -264,12 +272,15 @@ void hmap2obj::make_xyz ()
     xyz.clear ();
     xyz.resize (grid.size (), { 0.f, 0.f, 0.f });
 
+    float grid_min = params.absolute ? 0 : vmin;
+    float grid_max = params.absolute ? 0xFFFF : vmax;
+
     for (size_t i = 0, n = grid.size (); i < n; ++i)
     {
         vec3 pt;
         pt[0] = (i % params.hmap_size[0]) / (params.hmap_size[0] - 1.f);
         pt[2] = (i / params.hmap_size[1]) / (params.hmap_size[1] - 1.f);
-        pt[1] = (grid[i] - vmin) / (vmax - vmin);
+        pt[1] = (grid[i] - grid_min) / (grid_max - grid_min);
 
         for (size_t j = params.obj_blo.size (); j--; )
             pt[j] = params.obj_blo[j] + pt[j] * (params.obj_bhi[j] - params.obj_blo[j]);
@@ -325,11 +336,12 @@ int main (int argc, const char* argv[])
     const char* info = 
         "hmap2obj - A binary heightmap convertor to Wavefront *.obj file\n"
         "\n"
-        "hmap2obj HMAP OBJ SIZE_X SIZE_Y OBJ_LOW_CORNER OBJ_HIGH_CORNER\n"
+        "hmap2obj HMAP OBJ SIZE_X SIZE_Y OBJ_LOW_CORNER OBJ_HIGH_CORNER [--absolute]\n"
         "HMAP       - is the output binary heightmap file\n"
         "OBJ        - is the input obj file\n"
         "SIZE_XY    - the two integer dimensions of the heightmap which to put into the obj\n"
         "OBJ_CORNER - the low/high 3d floating corners of the obj to hold the heightmap\n"
+        "absolute   - disables the automatic stretch of input min/max height values\n"
         "\n"
         "Example:\n"
         "hmap2obj terrain.r16 terrain.obj 4096 4096 -0.5 0 -0.5 0.5 0.1 0.5\n"
