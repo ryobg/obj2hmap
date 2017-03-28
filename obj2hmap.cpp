@@ -58,6 +58,8 @@ public:
         std::string hmap;   ///< Output *.* binary file to write to
         uvec3 hmap_size;    ///< Says how big is the integer grid for the heightmap
         bvec3 height_coord; ///< Toggles which one of the 3 coords is the displacement axis
+        float objmin;       ///< Optional, real OBJ lowest displacement coordinage value
+        float objmax;       ///< Optional, real OBJ highest displacement coordinage value
         enum file_type      ///< Talks about what kind of heightmap values we should output
         {
             u8, u16, u32, f32,      ///< Binary 8/16/32 unsigned and 32 bit float
@@ -140,6 +142,8 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
     using namespace std;
 
     param_type p;
+    p.objmin = numeric_limits<float>::quiet_NaN ();
+    p.objmax = numeric_limits<float>::quiet_NaN ();
     p.hmap_size.fill (0);
     p.height_coord.fill (false);
 
@@ -196,14 +200,33 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
 
         try
         {
+            bool succ = false;
             int n = stoi (arg, nullptr, 0);
             if (n > 0) 
                 for (auto& d: p.hmap_size) if (!d) 
                 {
                     d = static_cast<unsigned> (n);
+                    succ = true;
                     break;
                 }
-            continue;
+            if (succ) continue;
+        }
+        catch (exception&)
+        {}
+
+        try
+        {
+            float n = stof (arg);
+            if (isnan (p.objmin))
+            {
+                p.objmin = n;
+                continue;
+            }
+            if (isnan (p.objmax))
+            {
+                p.objmax = n;
+                continue;
+            }
         }
         catch (exception&)
         {}
@@ -235,16 +258,18 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
 
 std::string obj2hmap::validate_params (param_type const& p)
 {
+    using namespace std;
+
     if ([&p] () -> bool {
-            std::ifstream f;
+            ifstream f;
             f.open (p.obj);
             return !f.is_open ();
         } ())
         return "An input Wavefront *.obj file was not opened!";
 
     if ([&p] () -> bool {
-            std::ofstream f;
-            f.open (p.hmap, std::ios_base::app);
+            ofstream f;
+            f.open (p.hmap, ios_base::app);
             return !f.is_open ();
         } ())
         return "An output heightmap file was not opened!";
@@ -253,9 +278,12 @@ std::string obj2hmap::validate_params (param_type const& p)
         if (n < 1)
             return "The heightmap size parameter is invalid!";
 
-    if (1 != std::accumulate (p.height_coord.cbegin (), p.height_coord.cend (), 
+    if (1 != accumulate (p.height_coord.cbegin (), p.height_coord.cend (), 
                 0, [] (int r, bool x) { return r += int (x); }))
             return "The heightmap displacement axis parameter is invalid!";
+
+    if (isnan (p.objmin) ^ isnan (p.objmax))
+        return "Either none, or both OBJ real min/max values should be set!";
 
     return "";
 }
@@ -380,11 +408,20 @@ void obj2hmap::dump_heightmap ()
     ofstream file (params.hmap, ios_base::binary);
 
     size_t haxis = find_disp_axis ();
-    auto height = params.hmap_size.at (haxis) / (bhi[haxis] - blo[haxis]);
+
+    float objmin = params.objmin;
+    float objmax = params.objmax;
+    if (!isnan (params.objmin) && !isnan (params.objmax))
+    {
+        objmin = min (objmin, params.objmin);
+        objmax = max (objmax, params.objmax);
+    }
+
+    auto height = params.hmap_size.at (haxis) / (objmax - objmin);
 
     for (auto h: grid)
     {
-        auto val = (h - blo[haxis]) * height;
+        auto val = (h - objmin) * height;
 
         switch (params.ftype) {
         case param_type::u8  : bstream_write<uint8_t > (file, val); break;
@@ -413,15 +450,16 @@ int main (int argc, const char* argv[])
     const char* info = 
         "obj2hmap - An Wavefront *.obj file convertor to binary heightmap file\n"
         "\n"
-        "obj2hmap OBJ HMAP SIZE_X SIZE_Y SIZE_Z x|y|z [u8|u16|u32|f32|tu8|tu16|tu32|tf32]\n"
+        "obj2hmap OBJ HMAP SIZE_X SIZE_Y SIZE_Z x|y|z [OBJ_HEIGHT] [[t]u|f<8|16|32>]\n"
         "OBJ        - is the input obj file\n"
         "HMAP       - is the output binary heightmap file\n"
         "SIZE_XYZ   - the three integer dimensions of the heightmap into which to put the obj\n"
         "x y z      - one of the axes showing the displacement value of the heightmap\n"
-        "[t]u[num]  - an optional type of heightmap values, binary or text 't'. Default u16.\n"
+        "OBJ_HEIGHT - if given, try to fit the obj height into these instead of the full SIZE_Y\n"
+        "[t]u|f[n]  - an optional type of heightmap values, binary or text 't'. Default u16.\n"
         "\n"
         "Example:\n"
-        "obj2hmap terrain.obj terrain.r16 4096 0xFFFF 4096 y\n"
+        "obj2hmap terrain.obj terrain.r16 4096 0xFFFF 4096 y 0.0 0.02\n"
         ;
     try
     {
