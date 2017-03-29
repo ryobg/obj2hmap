@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <cmath>
 #include <vector>
 #include <limits>
@@ -314,12 +315,11 @@ void hmap2obj::dump_obj ()
     {
         if (i % params.hmap_size[0])
         {
-            auto v1 = i;
-            auto v2 = i + 1;
+            auto v1 = i + 1;
+            auto v2 = i;
             auto v3 = i + params.hmap_size[0];
             file << "f " << v1 << ' ' << v2 << ' ' << v3 << '\n';
 
-            v1 = v2;
             v2 = v3;
             v3 = v2 + 1;
             file << "f " << v1 << ' ' << v2 << ' ' << v3 << '\n';

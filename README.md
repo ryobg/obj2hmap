@@ -12,6 +12,10 @@ the huge Doxygen comments around.
 Processing 1GiB obj file for 4k by 4k vertives, consumes like 20-30 seconds. Most of which are to
 read the file itself.
 
+There is one more tool created: hmap2obj
+Its purpose is basically to convert a simple binary heightmap file of 16 bit unsigned values into an
+Wavefront obj file. This way, the cycle is closed.
+
 ## Requirements
 
 Any C++11/14 conformant compiler. Didn't tried it, but I think even GCC 4.9 will suffice. During my
@@ -23,7 +27,13 @@ c++ obj2hmap.cpp -o obj2hmap -O2
 
 Is enough. You can skip even the optimization level `-O2` and the named executable `-o obj2hmap`.
 
-I have not tested with the Microsoft's compilers, but it should be easy to build with them too.
+I have tested with Visual Studio Community 2015 and succeded to build:
+
+```
+cl /EHsc obj2hmap.cpp
+```
+
+The `/EHsc` apprantly turns on some C++ exception mechanism in Visual C++ compiler.
 
 ## Usage
 
