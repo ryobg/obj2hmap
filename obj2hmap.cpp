@@ -48,6 +48,8 @@ public:
     typedef std::array<std::uint32_t, 3> uvec3;
     /// Single float based 3d vector
     typedef std::array<float, 3> vec3;
+    /// Double float based 3d vector (prioritize precision for bin->obj->bin iterations)
+    typedef std::array<double, 3> dvec3;
     /// Another special - boolean 3d vector
     typedef std::array<bool, 3> bvec3;
 
@@ -58,8 +60,8 @@ public:
         std::string hmap;   ///< Output *.* binary file to write to
         uvec3 hmap_size;    ///< Says how big is the integer grid for the heightmap
         bvec3 height_coord; ///< Toggles which one of the 3 coords is the displacement axis
-        float objmin;       ///< Optional, real OBJ lowest displacement coordinage value
-        float objmax;       ///< Optional, real OBJ highest displacement coordinage value
+        float objmin;       ///< Optional, real OBJ lowest displacement coordinate value
+        float objmax;       ///< Optional, real OBJ highest displacement coordinate value
         enum file_type      ///< Talks about what kind of heightmap values we should output
         {
             u8, u16, u32, f32,      ///< Binary 8/16/32 unsigned and 32 bit float
@@ -83,11 +85,11 @@ public:
     void read_obj ();
 
     /// Peek at the read up point cloud data
-    std::vector<vec3> const& obj_vertices () const {
+    auto const& obj_vertices () const {
         return xyz;
     }
     /// Report the axis aligned bounding box of the point cloud data
-    std::pair<vec3, vec3> obj_aabb () const {
+    auto obj_aabb () const {
         return std::make_pair (blo, bhi);
     }
 
@@ -99,10 +101,10 @@ public:
 
 private:
     param_type params;      ///< The input to the app
-    vec3 blo;               ///< Lowest corner of the obj bounding box
-    vec3 bhi;               ///< Highest corner of the obj bounding box
-    std::vector<vec3> xyz;  ///< The point cloud data coming from the obj file
-    std::vector<vec3::value_type> grid; ///< The integer XY grid of height values
+    dvec3 blo;              ///< Lowest corner of the obj bounding box
+    dvec3 bhi;              ///< Highest corner of the obj bounding box
+    std::vector<dvec3> xyz; ///< The point cloud data coming from the obj file
+    std::vector<dvec3::value_type> grid; ///< The integer XY grid of height values
 
     /// Detects which is height/displacement axis
     std::size_t find_disp_axis () const 
@@ -309,8 +311,8 @@ void obj2hmap::read_obj ()
 
     ifstream obj (params.obj);
 
-    blo.fill (numeric_limits<float>::max ());
-    bhi.fill (numeric_limits<float>::min ());
+    blo.fill (numeric_limits<decltype(blo)::value_type>::max ());
+    bhi.fill (numeric_limits<decltype(bhi)::value_type>::min ());
 
     // Good guess is that the requested hmap is 1:1 with the supplied OBJ vertices
     xyz.clear ();   
@@ -328,7 +330,7 @@ void obj2hmap::read_obj ()
         if (t[0] != 'v' || t[1] != ' ') // Wavefront's vertex type text line
             continue;
 
-        vec3 v;
+        dvec3 v;
         for (size_t i = 0; i < v.size (); ++i)
         {
             obj >> v[i];
@@ -358,9 +360,9 @@ void obj2hmap::make_grid ()
     using namespace std;
 
     grid.clear ();
-    grid.resize (accumulate_nondisp_size (), 0.f);
+    grid.resize (accumulate_nondisp_size (), 0);
  
-    vec3 gridsz;
+    dvec3 gridsz;
     for (size_t n = gridsz.size (), i = 0; i < n; ++i) 
     {
         gridsz[i]  = (params.hmap_size[i] - 1) / (bhi[i] - blo[i]);
@@ -375,7 +377,7 @@ void obj2hmap::make_grid ()
         for (size_t n = gridsz.size (), i = 0; i < n; ++i)
         {
             auto p = round ((xyz[beg][i] - blo[i]) * gridsz[i]);
-            ndx += static_cast<size_t> (p) * ndxmul;
+            ndx   += static_cast<size_t> (p) * ndxmul;
             ndxmul = ndxmul * !params.height_coord[i] * params.hmap_size[i]
                    + ndxmul *  params.height_coord[i];
         }
@@ -389,7 +391,7 @@ void obj2hmap::make_grid ()
 template<class CV, class V, class S>
 static inline void bstream_write (S& os, V val)
 {
-    CV v (static_cast<CV> (val));
+    CV v = static_cast<CV> (std::is_integral<CV>::value ? std::lround (val) : val);
     os.write (reinterpret_cast<typename S::char_type*> (&v), sizeof v);
 }
 
@@ -409,12 +411,12 @@ void obj2hmap::dump_heightmap ()
 
     size_t haxis = find_disp_axis ();
 
-    float objmin = params.objmin;
-    float objmax = params.objmax;
+    double objmin = params.objmin;
+    double objmax = params.objmax;
     if (!isnan (params.objmin) && !isnan (params.objmax))
     {
-        objmin = min (objmin, params.objmin);
-        objmax = max (objmax, params.objmax);
+        objmin = min<double> (objmin, params.objmin);
+        objmax = max<double> (objmax, params.objmax);
     }
 
     auto height = params.hmap_size.at (haxis) / (objmax - objmin);

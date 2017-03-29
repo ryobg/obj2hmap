@@ -48,6 +48,8 @@ public:
     typedef std::array<std::uint32_t, 2> uvec2;
     /// Single float based 3d vector
     typedef std::array<float, 3> vec3;
+    /// Double precision float based 3d vector (prioritize bin->obj->bin iterations)
+    typedef std::array<double, 3> dvec3;
 
     /// Describes the application parameters
     struct param_type
@@ -91,8 +93,8 @@ public:
 
 private:
     param_type params;      ///< The input to the app
-    std::vector<vec3> xyz;  ///< The point cloud data coming from the obj file
-    std::vector<vec3::value_type> grid; ///< The imported height values in XY order
+    std::vector<dvec3> xyz; ///< The point cloud data coming from the obj file
+    std::vector<dvec3::value_type> grid;///< The imported height values in XY order
     uvec2::value_type vmin, vmax;       ///< The min/max elevation data of the imported heightmap
 };
 
@@ -272,14 +274,14 @@ void hmap2obj::make_xyz ()
     xyz.clear ();
     xyz.resize (grid.size (), { 0.f, 0.f, 0.f });
 
-    float grid_min = params.absolute ? 0 : vmin;
-    float grid_max = params.absolute ? 0xFFFF : vmax;
+    double grid_min = params.absolute ?      0 : vmin;
+    double grid_max = params.absolute ? 0xFFFF : vmax;
 
     for (size_t i = 0, n = grid.size (); i < n; ++i)
     {
-        vec3 pt;
-        pt[0] = (i % params.hmap_size[0]) / (params.hmap_size[0] - 1.f);
-        pt[2] = (i / params.hmap_size[1]) / (params.hmap_size[1] - 1.f);
+        dvec3 pt;
+        pt[0] = double (i % params.hmap_size[0]) / (params.hmap_size[0] - 1);
+        pt[2] = double (i / params.hmap_size[1]) / (params.hmap_size[1] - 1);
         pt[1] = (grid[i] - grid_min) / (grid_max - grid_min);
 
         for (size_t j = params.obj_blo.size (); j--; )
@@ -300,6 +302,8 @@ void hmap2obj::dump_obj ()
     using namespace std;
 
     ofstream file (params.obj);
+    file.precision (numeric_limits<double>::digits10);
+    file.setf (ios::fixed, ios::floatfield);
 
     for (auto v: xyz)
     {
