@@ -58,8 +58,8 @@ public:
         std::string hmap;   ///< Input *.* heightmap binary file to read from
         std::string obj;    ///< Output *.obj file to write to
         uvec2 hmap_size;    ///< How big is the integer grid of the input heighmap file
-        vec3 obj_blo;       ///< The lowest corner of the obj bounding box
-        vec3 obj_bhi;       ///< The highest corner of the obj bounding box
+        dvec3 obj_blo;      ///< The lowest corner of the obj bounding box
+        dvec3 obj_bhi;      ///< The highest corner of the obj bounding box
         bool absolute;      ///< Whether height values shall occupy the whole input grid range
     };
 
@@ -116,8 +116,8 @@ hmap2obj::param_type hmap2obj::parse_cli (std::vector<std::string> const& args)
     param_type p;
     p.absolute = false;
     p.hmap_size.fill (0);
-    p.obj_blo.fill (numeric_limits<float>::quiet_NaN ());
-    p.obj_bhi.fill (numeric_limits<float>::quiet_NaN ());
+    p.obj_blo.fill (numeric_limits<decltype(p.obj_blo)::value_type>::quiet_NaN ());
+    p.obj_bhi.fill (numeric_limits<decltype(p.obj_bhi)::value_type>::quiet_NaN ());
 
     for (auto& arg: args) 
     {
@@ -158,7 +158,7 @@ hmap2obj::param_type hmap2obj::parse_cli (std::vector<std::string> const& args)
         try
         {
             bool succ = false;
-            float x = stof (arg);
+            auto x = stod (arg);
 
             for (size_t i = 0, n = p.obj_blo.size (); i < n; ++i)
                 if (isnan (p.obj_blo[i])) 
