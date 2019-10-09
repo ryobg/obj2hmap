@@ -67,11 +67,11 @@ public:
         {
             u8, u16, u32, f32,      ///< Binary 8/16/32 unsigned and 32 bit float
             tu8, tu16, tu32, tf32   ///< Same, but in text variant
-        } 
+        }
         ftype;              ///< The selected heightmap file
     };
 
-    // 
+    //
     static param_type parse_cli (std::vector<std::string> const& args);
 
     //
@@ -108,18 +108,18 @@ private:
     std::vector<dvec3::value_type> grid; ///< The integer XY grid of height values
 
     /// Detects which is height/displacement axis
-    std::size_t find_disp_axis () const 
-    { 
+    std::size_t find_disp_axis () const
+    {
         return std::find (params.height_coord.cbegin (), params.height_coord.cend (), true)
             - params.height_coord.cbegin ();
     }
 
     /// Report vertices size on all non-height dimensions.
-    std::size_t accumulate_nondisp_size () const 
+    std::size_t accumulate_nondisp_size () const
     {
         size_t acc = 1;
-        for (size_t n = params.hmap_size.size (), i = 0; i < n; ++i) 
-            if (!params.height_coord[i]) 
+        for (size_t n = params.hmap_size.size (), i = 0; i < n; ++i)
+            if (!params.height_coord[i])
                 acc *= params.hmap_size[i];
         return acc;
     }
@@ -127,11 +127,11 @@ private:
 
 //--------------------------------------------------------------------------------------------------
 
-/** 
+/**
  * Create application parameters out of the C++ main() arguments
  *
- * The arguments are expected to be (in any order): 
- * * obj and then heightmap file 
+ * The arguments are expected to be (in any order):
+ * * obj and then heightmap file
  * * heightmap dimensions in hex/dec X Y Z format.
  * * One of X Y or Z which shows the actual height of the displacement (e.g. height of terrain)
  * * Optionally, one of the obj2hmap#param_type#file_type members in text format
@@ -150,7 +150,7 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
     p.hmap_size.fill (0);
     p.height_coord.fill (false);
 
-    for (auto& arg: args) 
+    for (auto& arg: args)
     {
         if (arg == "x" || arg == "X")
         {
@@ -205,8 +205,8 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
         {
             bool succ = false;
             int n = stoi (arg, nullptr, 0);
-            if (n > 0) 
-                for (auto& d: p.hmap_size) if (!d) 
+            if (n > 0)
+                for (auto& d: p.hmap_size) if (!d)
                 {
                     d = static_cast<unsigned> (n);
                     succ = true;
@@ -234,13 +234,13 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
         catch (exception&)
         {}
 
-        if (p.obj.empty ()) 
+        if (p.obj.empty ())
         {
             p.obj = arg;
             continue;
         }
 
-        if (p.hmap.empty ()) 
+        if (p.hmap.empty ())
         {
             p.hmap = arg;
             continue;
@@ -252,7 +252,7 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
 
 //--------------------------------------------------------------------------------------------------
 
-/** 
+/**
  * Validation of the paramaters (the object does not assumes such).
  *
  * @param p to check
@@ -281,7 +281,7 @@ std::string obj2hmap::validate_params (param_type const& p)
         if (n < 1)
             return "The heightmap size parameter is invalid!";
 
-    if (1 != accumulate (p.height_coord.cbegin (), p.height_coord.cend (), 
+    if (1 != accumulate (p.height_coord.cbegin (), p.height_coord.cend (),
                 0, [] (int r, bool x) { return r += int (x); }))
             return "The heightmap displacement axis parameter is invalid!";
 
@@ -316,12 +316,12 @@ void obj2hmap::read_obj ()
     bhi.fill (numeric_limits<decltype(bhi)::value_type>::min ());
 
     // Good guess is that the requested hmap is 1:1 with the supplied OBJ vertices
-    xyz.clear ();   
+    xyz.clear ();
     xyz.reserve (accumulate_nondisp_size ());
 
     // As getline, but w/o the memory store - useless optimization.
-    auto skipline = [] (ifstream& is) { 
-        for (char c; is.get (c) && c != '\n'; ); 
+    auto skipline = [] (ifstream& is) {
+        for (char c; is.get (c) && c != '\n'; );
     };
 
     for (; obj; skipline (obj))
@@ -335,7 +335,7 @@ void obj2hmap::read_obj ()
         for (size_t i = 0; i < v.size (); ++i)
         {
             obj >> v[i];
-            blo[i] = min (blo[i], v[i]); 
+            blo[i] = min (blo[i], v[i]);
             bhi[i] = max (bhi[i], v[i]);
         }
 
@@ -362,9 +362,9 @@ void obj2hmap::make_grid ()
 
     grid.clear ();
     grid.resize (accumulate_nondisp_size (), 0);
- 
+
     dvec3 gridsz;
-    for (size_t n = gridsz.size (), i = 0; i < n; ++i) 
+    for (size_t n = gridsz.size (), i = 0; i < n; ++i)
     {
         gridsz[i]  = (params.hmap_size[i] - 1) / (bhi[i] - blo[i]);
         gridsz[i] *= !params.height_coord[i];
@@ -400,7 +400,7 @@ static inline void bstream_write (S& os, V val)
  * Dump the grid plane onto a binary file of proper format.
  *
  * At this point of time, the #grid should be already available and using the other parameters we
- * can write a file. Size of each file unit (8 bit, 16 bit or 32 bit) is decided by looking at the 
+ * can write a file. Size of each file unit (8 bit, 16 bit or 32 bit) is decided by looking at the
  * size of the height axis.
  */
 
@@ -450,7 +450,7 @@ int main (int argc, const char* argv[])
 {
     using namespace std;
 
-    const char* info = 
+    const char* info =
         "obj2hmap - An Wavefront *.obj file convertor to binary heightmap file\n"
         "\n"
         "obj2hmap OBJ HMAP SIZE_X SIZE_Y SIZE_Z x|y|z [OBJ_HEIGHT] [[t]u|f<8|16|32>]\n"
