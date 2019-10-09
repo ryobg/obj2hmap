@@ -61,8 +61,8 @@ public:
         std::string hmap;   ///< Output *.* binary file to write to
         uvec3 hmap_size;    ///< Says how big is the integer grid for the heightmap
         bvec3 height_coord; ///< Toggles which one of the 3 coords is the displacement axis
-        float objmin;       ///< Optional, real OBJ lowest displacement coordinate value
-        float objmax;       ///< Optional, real OBJ highest displacement coordinate value
+        double objmin;      ///< Optional, real OBJ lowest displacement coordinate value
+        double objmax;      ///< Optional, real OBJ highest displacement coordinate value
         enum file_type      ///< Talks about what kind of heightmap values we should output
         {
             u8, u16, u32, f32,      ///< Binary 8/16/32 unsigned and 32 bit float
@@ -145,8 +145,8 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
     using namespace std;
 
     param_type p;
-    p.objmin = numeric_limits<float>::quiet_NaN ();
-    p.objmax = numeric_limits<float>::quiet_NaN ();
+    p.objmin = numeric_limits<decltype(p.objmin)>::quiet_NaN ();
+    p.objmax = numeric_limits<decltype(p.objmax)>::quiet_NaN ();
     p.hmap_size.fill (0);
     p.height_coord.fill (false);
 
@@ -219,7 +219,7 @@ obj2hmap::param_type obj2hmap::parse_cli (std::vector<std::string> const& args)
 
         try
         {
-            float n = stof (arg);
+            auto n = stod (arg);
             if (isnan (p.objmin))
             {
                 p.objmin = n;
@@ -412,12 +412,12 @@ void obj2hmap::dump_heightmap ()
 
     size_t haxis = find_disp_axis ();
 
-    double objmin = params.objmin;
-    double objmax = params.objmax;
+    double objmin = blo[haxis];
+    double objmax = bhi[haxis];
     if (!isnan (params.objmin) && !isnan (params.objmax))
     {
-        objmin = min<double> (objmin, params.objmin);
-        objmax = max<double> (objmax, params.objmax);
+        objmin = min (objmin, params.objmin);
+        objmax = max (objmax, params.objmax);
     }
 
     auto height = params.hmap_size.at (haxis) / (objmax - objmin);
