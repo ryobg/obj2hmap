@@ -30,6 +30,12 @@ development I used GCC 6.2. No other external dependencies.
 c++ obj2hmap.cpp -o obj2hmap -O2
 ```
 
+Or MacOS:
+
+```
+clang++ -std=c++14 -stdlib=libc++ -Weverything  obj2hmap.cpp -o obj2hmap -O2
+```
+
 Is enough. You can skip even the optimization level `-O2` and the named executable `-o obj2hmap`.
 
 I have tested with Visual Studio Community 2015 and succeeded to build:
